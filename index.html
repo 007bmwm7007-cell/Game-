@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Block Blaster</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    min-height:100%;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    color:white;
+    overflow:hidden;
+    background:
+        radial-gradient(circle at 20% 10%,#263d75 0%,transparent 35%),
+        radial-gradient(circle at 80% 90%,#3d1760 0%,transparent 35%),
+        linear-gradient(135deg,#050814,#111b38,#090512);
+}
+
+button{
+    font-family:inherit;
+    border:0;
+    color:white;
+    cursor:pointer;
+    -webkit-user-select:none;
+    user-select:none;
+}
+
+.game{
+    width:100%;
+    max-width:560px;
+    min-height:100vh;
+    margin:auto;
+    padding:14px 12px 24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.logo{
+    margin:2px 0 10px;
+    font-size:32px;
+    font-weight:900;
+    letter-spacing:4px;
+    text-align:center;
+    color:white;
+    text-shadow:
+        0 0 8px #00ffff,
+        0 0 20px #008cff,
+        0 0 35px rgba(0,255,255,.5);
+}
+
+.stats{
+    width:min(94vw,470px);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:10px;
+}
+
+.stat{
+    padding:8px 10px;
+    border-radius:14px;
+    text-align:center;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 0 15px rgba(0,255,255,.07);
+}
+
+.statLabel{
+    font-size:10px;
+    opacity:.6;
+    letter-spacing:1px;
+}
+
+.statValue{
+    font-size:22px;
+    font-weight:900;
+    margin-top:2px;
+}
+
+/* =========================
+   BOARD
+========================= */
+
+#board{
+    width:min(94vw,470px);
+    aspect-ratio:1;
+
+    padding:7px;
+
+    display:grid;
+    grid-template-columns:repeat(8,1fr);
+    grid-template-rows:repeat(8,1fr);
+    gap:4px;
+
+    border-radius:19px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.12),
+            rgba(255,255,255,.025)
+        );
+
+    border:2px solid rgba(0,255,255,.22);
+
+    box-shadow:
+        0 0 25px rgba(0,255,255,.14),
+        inset 0 0 25px rgba(0,0,0,.5);
+
+    touch-action:none;
+    user-select:none;
+}
+
+.cell{
+    position:relative;
+    min-width:0;
+    min-height:0;
+
+    border-radius:6px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.07),
+            rgba(255,255,255,.025)
+        );
+
+    border:1px solid rgba(255,255,255,.045);
+
+    transition:
+        transform .07s,
+        background .07s,
+        box-shadow .07s;
+}
+
+.cell.target{
+    background:rgba(0,255,255,.27)!important;
+
+    box-shadow:
+        inset 0 0 0 2px #00ffff,
+        inset 0 0 12px rgba(0,255,255,.5),
+        0 0 10px #00ffff,
+        0 0 20px rgba(0,255,255,.75);
+
+    transform:scale(.91);
+
+    z-index:20;
+}
+
+.cell.target::after{
+    content:"";
+    position:absolute;
+    inset:3px;
+
+    border-radius:4px;
+
+    border:2px dashed rgba(255,255,255,.8);
+
+    pointer-events:none;
+}
+
+/* =========================
+   BLOCKS
+========================= */
+
+.block{
+    width:100%;
+    height:100%;
+    position:relative;
+    border-radius:6px;
+
+    box-shadow:
+        inset 0 2px 2px rgba(255,255,255,.3),
+        inset 0 -3px 5px rgba(0,0,0,.28),
+        0 2px 5px rgba(0,0,0,.35);
+}
+
+.block::before{
+    content:"";
+    position:absolute;
+    left:8%;
+    top:7%;
+    width:35%;
+    height:20%;
+    border-radius:50%;
+    background:rgba(255,255,255,.35);
+}
+
+.blue{
+    background:linear-gradient(145deg,#49d9ff,#0877ff);
+}
+
+.red{
+    background:linear-gradient(145deg,#ff5964,#d00032);
+}
+
+.green{
+    background:linear-gradient(145deg,#68ff91,#00a84f);
+}
+
+.yellow{
+    background:linear-gradient(145deg,#fff76a,#ffad00);
+}
+
+.purple{
+    background:linear-gradient(145deg,#d46cff,#702cff);
+}
+
+.cyan{
+    background:linear-gradient(145deg,#6fffff,#00a8c8);
+}
+
+/* =========================
+   THEMES
+========================= */
+
+.block.lego,
+.miniCell.lego{
+    background:
+        radial-gradient(circle at 25% 25%,
+            rgba(255,255,255,.3) 0 10%,
+            transparent 11%),
+        radial-gradient(circle at 75% 25%,
+            rgba(255,255,255,.22) 0 10%,
+            transparent 11%),
+        radial-gradient(circle at 25% 75%,
+            rgba(0,0,0,.18) 0 10%,
+            transparent 11%),
+        radial-gradient(circle at 75% 75%,
+            rgba(0,0,0,.18) 0 10%,
+            transparent 11%),
+        linear-gradient(145deg,#ff4b4b,#c80025);
+}
+
+.block.cookie,
+.miniCell.cookie{
+    background:
+        radial-gradient(circle at 22% 28%,
+            #3d1b0b 0 7%,transparent 8%),
+        radial-gradient(circle at 70% 20%,
+            #3d1b0b 0 6%,transparent 7%),
+        radial-gradient(circle at 45% 65%,
+            #3d1b0b 0 7%,transparent 8%),
+        radial-gradient(circle at 82% 72%,
+            #3d1b0b 0 6%,transparent 7%),
+        linear-gradient(145deg,#e8b05b,#a96020);
+}
+
+.block.gem,
+.miniCell.gem{
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff,
+            #b7ffff 12%,
+            #39eaff 32%,
+            #2675ff 55%,
+            #813dff 80%,
+            #e6b6ff
+        );
+
+    clip-path:polygon(
+        50% 0%,
+        92% 18%,
+        100% 65%,
+        68% 100%,
+        32% 100%,
+        0% 65%,
+        8% 18%
+    );
+}
+
+/* =========================
+   PIECES AREA
+========================= */
+
+.piecesTitle{
+    margin-top:10px;
+    margin-bottom:3px;
+    font-size:11px;
+    letter-spacing:2px;
+    opacity:.5;
+}
+
+#pieces{
+    width:min(94vw,470px);
+    min-height:92px;
+
+    display:flex;
+    justify-content:space-evenly;
+    align-items:center;
+
+    gap:7px;
+
+    padding:4px 0;
+
+    touch-action:none;
+    user-select:none;
+}
+
+.piece{
+    position:relative;
+
+    display:grid;
+
+    width:max-content;
+    height:max-content;
+
+    padding:7px;
+
+    border-radius:13px;
+
+    background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.1);
+
+    box-shadow:
+        0 5px 15px rgba(0,0,0,.15);
+
+    transition:
+        transform .12s,
+        opacity .12s,
+        filter .12s;
+
+    touch-action:none;
+    user-select:none;
+
+    cursor:grab;
+}
+
+.piece:active{
+    cursor:grabbing;
+}
+
+.piece.selected{
+    transform:scale(1.08);
+    border-color:rgba(0,255,255,.7);
+    box-shadow:
+        0 0 20px rgba(0,255,255,.3);
+}
+
+.piece.used{
+    opacity:.14;
+    filter:grayscale(1);
+    pointer-events:none;
+}
+
+.miniCell{
+    width:25px;
+    height:25px;
+
+    border-radius:5px;
+
+    position:relative;
+
+    box-shadow:
+        inset 0 2px 2px rgba(255,255,255,.3),
+        inset 0 -2px 4px rgba(0,0,0,.25),
+        0 1px 4px rgba(0,0,0,.35);
+}
+
+.miniCell::before{
+    content:"";
+    position:absolute;
+
+    left:8%;
+    top:7%;
+
+    width:35%;
+    height:20%;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.3);
+}
+
+/* =========================
+   DRAG GHOST
+========================= */
+
+.dragGhost{
+    position:fixed;
+
+    display:grid;
+
+    pointer-events:none;
+
+    z-index:99999;
+
+    filter:
+        drop-shadow(0 0 8px #00ffff)
+        drop-shadow(0 0 18px rgba(0,255,255,.7));
+
+    transform:translateZ(0);
+}
+
+.dragGhost .miniCell{
+    width:var(--ghost-cell);
+    height:var(--ghost-cell);
+}
+
+/* =========================
+   CONTROLS
+========================= */
+
+.controls{
+    width:min(94vw,470px);
+
+    display:grid;
+    grid-template-columns:1fr 1fr;
+
+    gap:9px;
+
+    margin-top:7px;
+}
+
+.control{
+    padding:12px 8px;
+
+    border-radius:13px;
+
+    font-size:14px;
+    font-weight:800;
+
+    background:
+        linear-gradient(
+            135deg,
+            #195dff,
+            #7528ff
+        );
+
+    box-shadow:
+        0 5px 18px rgba(70,50,255,.25);
+
+    transition:
+        transform .1s,
+        filter .1s;
+}
+
+.control:active{
+    transform:scale(.95);
+}
+
+.control:hover{
+    filter:brightness(1.15);
+}
+
+/* =========================
+   COMBO
+========================= */
+
+#combo{
+    position:fixed;
+
+    top:13%;
+
+    left:50%;
+
+    transform:
+        translateX(-50%)
+        scale(.5);
+
+    opacity:0;
+
+    pointer-events:none;
+
+    z-index:3000;
+
+    font-size:28px;
+    font-weight:900;
+
+    color:#fff;
+
+    text-shadow:
+        0 0 8px #00ffff,
+        0 0 20px #008cff;
+
+    transition:
+        opacity .2s,
+        transform .25s;
+}
+
+#combo.show{
+    opacity:1;
+
+    transform:
+        translateX(-50%)
+        scale(1);
+}
+
+/* =========================
+   LEVEL POPUP
+========================= */
+
+.overlay{
+    position:fixed;
+    inset:0;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    padding:20px;
+
+    background:rgba(0,0,0,.68);
+
+    backdrop-filter:blur(7px);
+
+    z-index:5000;
+
+    opacity:0;
+    pointer-events:none;
+
+    transition:opacity .2s;
+}
+
+.overlay.show{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.popup{
+    width:min(90vw,400px);
+
+    padding:30px 22px;
+
+    text-align:center;
+
+    border-radius:24px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #18264f,
+            #0d122b
+        );
+
+    border:2px solid rgba(0,255,255,.4);
+
+    box-shadow:
+        0 0 35px rgba(0,255,255,.25);
+
+    animation:popupIn .3s ease;
+}
+
+.popup h2{
+    margin:0 0 10px;
+    font-size:30px;
+}
+
+.popup p{
+    margin:0;
+    opacity:.75;
+}
+
+@keyframes popupIn{
+    from{
+        transform:scale(.7);
+        opacity:0;
+    }
+
+    to{
+        transform:scale(1);
+        opacity:1;
+    }
+}
+
+/* =========================
+   PARTICLES
+========================= */
+
+.particle{
+    position:fixed;
+
+    width:7px;
+    height:7px;
+
+    border-radius:50%;
+
+    pointer-events:none;
+
+    z-index:100000;
+
+    animation:
+        particleFly .7s ease-out forwards;
+}
+
+@keyframes particleFly{
+
+    from{
+        transform:
+            translate(0,0)
+            scale(1);
+
+        opacity:1;
+    }
+
+    to{
+        transform:
+            translate(var(--dx),var(--dy))
+            scale(.05);
+
+        opacity:0;
+    }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:380px){
+
+    .game{
+        padding-left:7px;
+        padding-right:7px;
+    }
+
+    .logo{
+        font-size:27px;
+    }
+
+    .miniCell{
+        width:21px;
+        height:21px;
+    }
+
+    .piece{
+        padding:5px;
+    }
+
+    .control{
+        font-size:13px;
+        padding:10px 6px;
+    }
+}
+
+@media(min-width:700px){
+
+    .game{
+        padding-top:25px;
+    }
+
+    .logo{
+        font-size:38px;
+    }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+    <div class="logo">
+        BLOCK BLASTER
+    </div>
+
+    <div class="stats">
+
+        <div class="stat">
+            <div class="statLabel">
+                СЧЁТ
+            </div>
+
+            <div class="statValue" id="score">
+                0
+            </div>
+        </div>
+
+        <div class="stat">
+            <div class="statLabel">
+                РЕКОРД
+            </div>
+
+            <div class="statValue" id="best">
+                0
+            </div>
+        </div>
+
+    </div>
+
+    <div id="board"></div>
+
+    <div class="piecesTitle">
+        ПЕРЕТАЩИ ФИГУРУ НА ПОЛЕ
+    </div>
+
+    <div id="pieces"></div>
+
+    <div class="controls">
+
+        <button
+            class="control"
+            id="hintButton">
+            💡 Подсказка
+            (<span id="hintCount">3</span>)
+        </button>
+
+        <button
+            class="control"
+            id="restartButton">
+            🔄 Заново
+        </button>
+
+    </div>
+
+</div>
+
+
+<div id="combo">
+    COMBO ×2!
+</div>
+
+
+<div
+    class="overlay"
+    id="levelMessage">
+
+    <div class="popup">
+
+        <h2 id="levelMessageTitle">
+            НОВАЯ ТЕМА!
+        </h2>
+
+        <p id="levelMessageText">
+            Новый уровень!
+        </p>
+
+    </div>
+
+</div>
+
+
+<div
+    class="overlay"
+    id="gameOver">
+
+    <div class="popup">
+
+        <h2>
+            💥 GAME OVER
+        </h2>
+
+        <p style="font-size:25px;margin:10px 0 20px">
+            Счёт:
+            <b id="finalScore">0</b>
+        </p>
+
+        <button
+            class="control"
+            id="restartGameButton">
+            🔄 Играть снова
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   CONSTANTS
+===================================================== */
+
+const SIZE = 8;
+
+const SHAPES = [
+
+    [[1]],
+
+    [[1,1]],
+
+    [[1,1,1]],
+
+    [[1,1,1,1]],
+
+    [[1,1,1,1,1]],
+
+    [[1],[1]],
+
+    [[1],[1],[1]],
+
+    [[1],[1],[1],[1]],
+
+    [[1,1],[1,1]],
+
+    [[1,1,1],[1,1,1]],
+
+    [[1,1],[1,1],[1,1]],
+
+    [[1,0],[1,0],[1,1]],
+
+    [[0,1],[0,1],[1,1]],
+
+    [[1,1],[1,0],[1,0]],
+
+    [[1,1],[0,1],[0,1]],
+
+    [[1,0],[1,1],[0,1]],
+
+    [[0,1],[1,1],[1,0]],
+
+    [[1,1,1],[0,1,0]],
+
+    [[0,1,0],[1,1,1]],
+
+    [[1,0,0],[1,1,1]],
+
+    [[0,0,1],[1,1,1]]
+
+];
+
+const COLORS = [
+    "blue",
+    "red",
+    "green",
+    "yellow",
+    "purple",
+    "cyan"
+];
+
+
+/* =====================================================
+   DOM
+===================================================== */
+
+const boardElement =
+    document.getElementById("board");
+
+const piecesElement =
+    document.getElementById("pieces");
+
+const scoreElement =
+    document.getElementById("score");
+
+const bestElement =
+    document.getElementById("best");
+
+const hintButton =
+    document.getElementById("hintButton");
+
+const hintCountElement =
+    document.getElementById("hintCount");
+
+const restartButton =
+    document.getElementById("restartButton");
+
+const restartGameButton =
+    document.getElementById("restartGameButton");
+
+const gameOverElement =
+    document.getElementById("gameOver");
+
+const finalScoreElement =
+    document.getElementById("finalScore");
+
+const levelMessage =
+    document.getElementById("levelMessage");
+
+const levelMessageTitle =
+    document.getElementById("levelMessageTitle");
+
+const levelMessageText =
+    document.getElementById("levelMessageText");
+
+const comboElement =
+    document.getElementById("combo");
+
+
+/* =====================================================
+   GAME STATE
+===================================================== */
+
+let board = [];
+
+let pieces = [];
+
+let score = 0;
+
+let best =
+    Number(
+        localStorage.getItem(
+            "blockBlasterBest"
+        ) || 0
+    );
+
+let hints = 3;
+
+let gameOver = false;
+
+let drag = null;
+
+let currentTheme = 0;
+
+let combo = 0;
+
+let audioContext = null;
+
+
+/* =====================================================
+   AUDIO
+===================================================== */
+
+function playSound(
+    frequency = 440,
+    duration = .06,
+    type = "sine",
+    volume = .025
+){
+
+    try{
+
+        if(!audioContext){
+
+            audioContext =
+                new (
+                    window.AudioContext ||
+                    window.webkitAudioContext
+                )();
+
+        }
+
+        if(
+            audioContext.state ===
+            "suspended"
+        ){
+
+            audioContext.resume();
+
+        }
+
+        const oscillator =
+            audioContext.createOscillator();
+
+        const gain =
+            audioContext.createGain();
+
+        oscillator.type = type;
+
+        oscillator.frequency.value =
+            frequency;
+
+        gain.gain.value =
+            volume;
+
+        oscillator.connect(gain);
+
+        gain.connect(
+            audioContext.destination
+        );
+
+        oscillator.start();
+
+        gain.gain.exponentialRampToValueAtTime(
+            .001,
+            audioContext.currentTime +
+            duration
+        );
+
+        oscillator.stop(
+            audioContext.currentTime +
+            duration
+        );
+
+    }catch(e){}
+
+}
+
+
+/* =====================================================
+   BOARD
+===================================================== */
+
+function createEmptyBoard(){
+
+    board = [];
+
+    for(let y=0;y<SIZE;y++){
+
+        board[y] = [];
+
+        for(let x=0;x<SIZE;x++){
+
+            board[y][x] = null;
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   PIECES
+===================================================== */
+
+function randomPiece(){
+
+    const source =
+        SHAPES[
+            Math.floor(
+                Math.random() *
+                SHAPES.length
+            )
+        ];
+
+    /*
+       Создаём копию,
+       чтобы случайно не изменить
+       оригинальную форму.
+    */
+
+    const shape =
+        source.map(
+            row => [...row]
+        );
+
+    return {
+
+        shape,
+
+        color:
+            COLORS[
+                Math.floor(
+                    Math.random() *
+                    COLORS.length
+                )
+            ],
+
+        used:false
+
+    };
+
+}
+
+
+function createPieces(){
+
+    pieces = [
+        randomPiece(),
+        randomPiece(),
+        randomPiece()
+    ];
+
+}
+
+
+/* =====================================================
+   SCORE
+===================================================== */
+
+function updateScore(){
+
+    scoreElement.textContent =
+        score.toLocaleString();
+
+    if(score > best){
+
+        best = score;
+
+        localStorage.setItem(
+            "blockBlasterBest",
+            best
+        );
+
+    }
+
+    bestElement.textContent =
+        best.toLocaleString();
+
+}
+
+
+/* =====================================================
+   THEMES
+===================================================== */
+
+function getTheme(){
+
+    if(score >= 10000)
+        return 3;
+
+    if(score >= 5000)
+        return 2;
+
+    if(score >= 2500)
+        return 1;
+
+    return 0;
+
+}
+
+
+function checkTheme(){
+
+    const theme =
+        getTheme();
+
+    if(theme === currentTheme)
+        return;
+
+    currentTheme =
+        theme;
+
+    if(theme === 1){
+
+        showLevelMessage(
+            "🧱 LEGO MODE!",
+            "Ты набрал 2500 очков!"
+        );
+
+    }
+
+    if(theme === 2){
+
+        showLevelMessage(
+            "🍪 COOKIE MODE!",
+            "Ты набрал 5000 очков!"
+        );
+
+    }
+
+    if(theme === 3){
+
+        showLevelMessage(
+            "💎 GEM MODE!",
+            "Ты набрал 10000 очков!"
+        );
+
+    }
+
+    renderBoard();
+    renderPieces();
+
+}
+
+
+/* =====================================================
+   BOARD RENDER
+===================================================== */
+
+function renderBoard(){
+
+    boardElement.innerHTML = "";
+
+    const theme =
+        getTheme();
+
+    for(let y=0;y<SIZE;y++){
+
+        for(let x=0;x<SIZE;x++){
+
+            const cell =
+                document.createElement("div");
+
+            cell.className =
+                "cell";
+
+            cell.dataset.x = x;
+            cell.dataset.y = y;
+
+            if(board[y][x]){
+
+                const block =
+                    document.createElement("div");
+
+                block.className =
+                    "block " +
+                    board[y][x].color;
+
+                if(theme === 1)
+                    block.classList.add("lego");
+
+                if(theme === 2)
+                    block.classList.add("cookie");
+
+                if(theme === 3)
+                    block.classList.add("gem");
+
+                cell.appendChild(block);
+
+            }
+
+            boardElement.appendChild(
+                cell
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   PIECE RENDER
+===================================================== */
+
+function renderPieces(){
+
+    piecesElement.innerHTML = "";
+
+    const theme =
+        getTheme();
+
+    const small =
+        window.innerWidth <= 380;
+
+    const miniSize =
+        small ? 21 : 25;
+
+    pieces.forEach(
+        (piece,index)=>{
+
+            const element =
+                document.createElement("div");
+
+            element.className =
+                "piece";
+
+            if(piece.used){
+
+                element.classList.add(
+                    "used"
+                );
+
+            }
+
+            const rows =
+                piece.shape.length;
+
+            const cols =
+                piece.shape[0].length;
+
+            /*
+               Очень важно:
+               пустые клетки НЕ удаляются.
+               Каждая клетка получает
+               свою реальную позицию.
+            */
+
+            element.style.gridTemplateColumns =
+                `repeat(${cols},${miniSize}px)`;
+
+            element.style.gridTemplateRows =
+                `repeat(${rows},${miniSize}px)`;
+
+            element.dataset.index =
+                index;
+
+            for(
+                let y=0;
+                y<rows;
+                y++
+            ){
+
+                for(
+                    let x=0;
+                    x<cols;
+                    x++
+                ){
+
+                    if(!piece.shape[y][x])
+                        continue;
+
+                    const cell =
+                        document.createElement("div");
+
+                    cell.className =
+                        "miniCell block " +
+                        piece.color;
+
+                    cell.style.gridColumn =
+                        x + 1;
+
+                    cell.style.gridRow =
+                        y + 1;
+
+                    if(theme === 1)
+                        cell.classList.add("lego");
+
+                    if(theme === 2)
+                        cell.classList.add("cookie");
+
+                    if(theme === 3)
+                        cell.classList.add("gem");
+
+                    element.appendChild(
+                        cell
+                    );
+
+                }
+
+            }
+
+            element.addEventListener(
+                "pointerdown",
+                startDrag,
+                {
+                    passive:false
+                }
+            );
+
+            piecesElement.appendChild(
+                element
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CAN PLACE
+===================================================== */
+
+function canPlace(
+    shape,
+    startX,
+    startY
+){
+
+    for(
+        let y=0;
+        y<shape.length;
+        y++
+    ){
+
+        for(
+            let x=0;
+            x<shape[y].length;
+            x++
+        ){
+
+            if(!shape[y][x])
+                continue;
+
+            const bx =
+                startX + x;
+
+            const by =
+                startY + y;
+
+            if(
+                bx < 0 ||
+                bx >= SIZE ||
+                by < 0 ||
+                by >= SIZE
+            ){
+
+                return false;
+
+            }
+
+            if(board[by][bx])
+                return false;
+
+        }
+
+    }
+
+    return true;
+
+}
+
+
+/* =====================================================
+   CELL INFORMATION
+===================================================== */
+
+function getBoardMetrics(){
+
+    const cell =
+        boardElement.querySelector(
+            ".cell"
+        );
+
+    if(!cell)
+        return null;
+
+    const rect =
+        cell.getBoundingClientRect();
+
+    const style =
+        getComputedStyle(
+            boardElement
+        );
+
+    return {
+
+        rect,
+
+        size:rect.width,
+
+        gap:
+            parseFloat(
+                style.gap
+            ) || 4
+
+    };
+
+}
+
+
+/* =====================================================
+   FIND BEST MOVE
+===================================================== */
+
+function findNearestValidMove(
+    piece,
+    pointerX,
+    pointerY
+){
+
+    const metrics =
+        getBoardMetrics();
+
+    if(!metrics)
+        return null;
+
+    const {
+        rect,
+        size,
+        gap
+    } = metrics;
+
+    let bestMove = null;
+
+    let bestDistance =
+        Infinity;
+
+    const shapeWidth =
+        piece.shape[0].length;
+
+    const shapeHeight =
+        piece.shape.length;
+
+    for(
+        let y=0;
+        y<SIZE;
+        y++
+    ){
+
+        for(
+            let x=0;
+            x<SIZE;
+            x++
+        ){
+
+            if(
+                !canPlace(
+                    piece.shape,
+                    x,
+                    y
+                )
+            ){
+
+                continue;
+
+            }
+
+            const centerX =
+                rect.left +
+                x * (size + gap) +
+                (
+                    shapeWidth *
+                    (size + gap)
+                ) / 2 -
+                gap / 2;
+
+            const centerY =
+                rect.top +
+                y * (size + gap) +
+                (
+                    shapeHeight *
+                    (size + gap)
+                ) / 2 -
+                gap / 2;
+
+            const dx =
+                pointerX - centerX;
+
+            const dy =
+                pointerY - centerY;
+
+            const distance =
+                Math.hypot(
+                    dx,
+                    dy
+                );
+
+            if(
+                distance <
+                bestDistance
+            ){
+
+                bestDistance =
+                    distance;
+
+                bestMove = {
+
+                    x,
+                    y,
+
+                    distance
+
+                };
+
+            }
+
+        }
+
+    }
+
+    return bestMove;
+
+}
+
+
+/* =====================================================
+   GHOST
+===================================================== */
+
+function createGhost(piece){
+
+    const ghost =
+        document.createElement(
+            "div"
+        );
+
+    ghost.className =
+        "dragGhost";
+
+    const metrics =
+        getBoardMetrics();
+
+    if(!metrics)
+        return ghost;
+
+    const {
+        size,
+        gap
+    } = metrics;
+
+    ghost.style.setProperty(
+        "--ghost-cell",
+        size + "px"
+    );
+
+    ghost.style.gap =
+        gap + "px";
+
+    ghost.style.gridTemplateColumns =
+        `repeat(
+            ${piece.shape[0].length},
+            ${size}px
+        )`;
+
+    ghost.style.gridTemplateRows =
+        `repeat(
+            ${piece.shape.length},
+            ${size}px
+        )`;
+
+    const theme =
+        getTheme();
+
+    for(
+        let y=0;
+        y<piece.shape.length;
+        y++
+    ){
+
+        for(
+            let x=0;
+            x<piece.shape[y].length;
+            x++
+        ){
+
+            if(!piece.shape[y][x])
+                continue;
+
+            const cell =
+                document.createElement(
+                    "div"
+                );
+
+            cell.className =
+                "miniCell block " +
+                piece.color;
+
+            cell.style.gridColumn =
+                x + 1;
+
+            cell.style.gridRow =
+                y + 1;
+
+            if(theme === 1)
+                cell.classList.add("lego");
+
+            if(theme === 2)
+                cell.classList.add("cookie");
+
+            if(theme === 3)
+                cell.classList.add("gem");
+
+            ghost.appendChild(
+                cell
+            );
+
+        }
+
+    }
+
+    document.body.appendChild(
+        ghost
+    );
+
+    return ghost;
+
+}
+
+
+function moveGhost(
+    ghost,
+    pointerX,
+    pointerY
+){
+
+    if(!ghost)
+        return;
+
+    const rect =
+        ghost.getBoundingClientRect();
+
+    /*
+       Фигура находится выше пальца,
+       поэтому палец никогда полностью
+       не закрывает её.
+    */
+
+    ghost.style.left =
+        (
+            pointerX -
+            rect.width / 2
+        ) + "px";
+
+    ghost.style.top =
+        (
+            pointerY -
+            rect.height -
+            28
+        ) + "px";
+
+}
+
+
+/* =====================================================
+   TARGET
+===================================================== */
+
+function clearTarget(){
+
+    document
+        .querySelectorAll(
+            ".cell.target"
+        )
+        .forEach(
+            cell =>
+                cell.classList.remove(
+                    "target"
+                )
+        );
+
+}
+
+
+function highlightTarget(
+    piece,
+    startX,
+    startY
+){
+
+    clearTarget();
+
+    for(
+        let y=0;
+        y<piece.shape.length;
+        y++
+    ){
+
+        for(
+            let x=0;
+            x<piece.shape[y].length;
+            x++
+        ){
+
+            if(!piece.shape[y][x])
+                continue;
+
+            const bx =
+                startX + x;
+
+            const by =
+                startY + y;
+
+            const cell =
+                boardElement.querySelector(
+                    `.cell[data-x="${bx}"][data-y="${by}"]`
+                );
+
+            if(cell){
+
+                cell.classList.add(
+                    "target"
+                );
+
+            }
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   DRAG START
+===================================================== */
+
+function startDrag(event){
+
+    if(gameOver)
+        return;
+
+    const element =
+        event.currentTarget;
+
+    const index =
+        Number(
+            element.dataset.index
+        );
+
+    const piece =
+        pieces[index];
+
+    if(!piece || piece.used)
+        return;
+
+    event.preventDefault();
+
+    playSound(
+        330,
+        .05,
+        "sine",
+        .018
+    );
+
+    element.classList.add(
+        "selected"
+    );
+
+    const ghost =
+        createGhost(piece);
+
+    drag = {
+
+        index,
+
+        piece,
+
+        ghost,
+
+        pointerId:
+            event.pointerId,
+
+        target:null,
+
+        sourceElement:
+            element
+
+    };
+
+    try{
+
+        element.setPointerCapture(
+            event.pointerId
+        );
+
+    }catch(e){}
+
+    updateDrag(
+        event.clientX,
+        event.clientY
+    );
+
+}
+
+
+/* =====================================================
+   DRAG UPDATE
+===================================================== */
+
+function updateDrag(
+    x,
+    y
+){
+
+    if(!drag)
+        return;
+
+    moveGhost(
+        drag.ghost,
+        x,
+        y
+    );
+
+    const move =
+        findNearestValidMove(
+            drag.piece,
+            x,
+            y
+        );
+
+    const metrics =
+        getBoardMetrics();
+
+    if(!metrics)
+        return;
+
+    /*
+       Очень удобное магнитное поле:
+       можно отпустить фигуру
+       довольно далеко от клетки.
+    */
+
+    const maxDistance =
+        metrics.size * 4.5;
+
+    if(
+        move &&
+        move.distance <= maxDistance
+    ){
+
+        drag.target =
+            move;
+
+        highlightTarget(
+            drag.piece,
+            move.x,
+            move.y
+        );
+
+    }else{
+
+        drag.target = null;
+
+        clearTarget();
+
+    }
+
+}
+
+
+/* =====================================================
+   POINTER MOVE
+===================================================== */
+
+document.addEventListener(
+    "pointermove",
+    event=>{
+
+        if(!drag)
+            return;
+
+        event.preventDefault();
+
+        updateDrag(
+            event.clientX,
+            event.clientY
+        );
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+/* =====================================================
+   POINTER UP
+===================================================== */
+
+document.addEventListener(
+    "pointerup",
+    finishDrag
+);
+
+document.addEventListener(
+    "pointercancel",
+    finishDrag
+);
+
+
+function finishDrag(){
+
+    if(!drag)
+        return;
+
+    const current =
+        drag;
+
+    drag = null;
+
+    if(
+        current.sourceElement
+    ){
+
+        current.sourceElement
+            .classList.remove(
+                "selected"
+            );
+
+    }
+
+    if(
+        current.ghost &&
+        current.ghost.parentNode
+    ){
+
+        current.ghost.remove();
+
+    }
+
+    clearTarget();
+
+    if(
+        current.target &&
+        canPlace(
+            current.piece.shape,
+            current.target.x,
+            current.target.y
+        )
+    ){
+
+        placePiece(
+            current.index,
+            current.target.x,
+            current.target.y
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   PLACE
+===================================================== */
+
+function placePiece(
+    index,
+    startX,
+    startY
+){
+
+    const piece =
+        pieces[index];
+
+    if(!piece || piece.used)
+        return;
+
+    let placed = 0;
+
+    for(
+        let y=0;
+        y<piece.shape.length;
+        y++
+    ){
+
+        for(
+            let x=0;
+            x<piece.shape[y].length;
+            x++
+        ){
+
+            if(!piece.shape[y][x])
+                continue;
+
+            board[
+                startY+y
+            ][
+                startX+x
+            ] = {
+
+                color:
+                    piece.color
+
+            };
+
+            placed++;
+
+        }
+
+    }
+
+    piece.used = true;
+
+    score +=
+        placed * 10;
+
+    updateScore();
+
+    renderBoard();
+
+    renderPieces();
+
+    checkTheme();
+
+    playSound(
+        520,
+        .07,
+        "triangle",
+        .025
+    );
+
+    spawnParticles(
+        startX,
+        startY,
+        placed
+    );
+
+    setTimeout(
+        clearLines,
+        100
+    );
+
+}
+
+
+/* =====================================================
+   CLEAR LINES
+===================================================== */
+
+function clearLines(){
+
+    if(gameOver)
+        return;
+
+    const rows = [];
+    const cols = [];
+
+    for(
+        let y=0;
+        y<SIZE;
+        y++
+    ){
+
+        let full = true;
+
+        for(
+            let x=0;
+            x<SIZE;
+            x++
+        ){
+
+            if(!board[y][x]){
+
+                full = false;
+                break;
+
+            }
+
+        }
+
+        if(full)
+            rows.push(y);
+
+    }
+
+
+    for(
+        let x=0;
+        x<SIZE;
+        x++
+    ){
+
+        let full = true;
+
+        for(
+            let y=0;
+            y<SIZE;
+            y++
+        ){
+
+            if(!board[y][x]){
+
+                full = false;
+                break;
+
+            }
+
+        }
+
+        if(full)
+            cols.push(x);
+
+        }
+
+    const total =
+        rows.length +
+        cols.length;
+
+    if(total === 0){
+
+        combo = 0;
+
+        finishTurn();
+
+        return;
+
+    }
+
+    combo++;
+
+    rows.forEach(
+        y=>{
+
+            for(
+                let x=0;
+                x<SIZE;
+                x++
+            ){
+
+                board[y][x] = null;
+
+            }
+
+        }
+    );
+
+
+    cols.forEach(
+        x=>{
+
+            for(
+                let y=0;
+                y<SIZE;
+                y++
+            ){
+
+                board[y][x] = null;
+
+            }
+
+        }
+    );
+
+
+    let bonus =
+        total * 100 +
+        Math.max(
+            0,
+            total - 1
+        ) * 50;
+
+    if(combo > 1){
+
+        bonus +=
+            combo * 50;
+
+        showCombo();
+
+    }
+
+    score += bonus;
+
+    updateScore();
+
+    renderBoard();
+
+    checkTheme();
+
+    playSound(
+        720 + total * 80,
+        .16,
+        "square",
+        .03
+    );
+
+    spawnClearParticles();
+
+    setTimeout(
+        finishTurn,
+        220
+    );
+
+}
+
+
+/* =====================================================
+   COMBO
+===================================================== */
+
+function showCombo(){
+
+    comboElement.textContent =
+        `COMBO ×${combo}!`;
+
+    comboElement.classList.add(
+        "show"
+    );
+
+    setTimeout(
+        ()=>{
+            comboElement.classList.remove(
+                "show"
+            );
+        },
+        900
+    );
+
+}
+
+
+/* =====================================================
+   FINISH TURN
+===================================================== */
+
+function finishTurn(){
+
+    if(gameOver)
+        return;
+
+    const allUsed =
+        pieces.every(
+            piece => piece.used
+        );
+
+    if(allUsed){
+
+        createPieces();
+
+        renderPieces();
+
+        playSound(
+            600,
+            .06,
+            "sine",
+            .02
+        );
+
+    }
+
+    if(!hasAnyMove()){
+
+        showGameOver();
+
+    }
+
+}
+
+
+/* =====================================================
+   ANY MOVE
+===================================================== */
+
+function hasAnyMove(){
+
+    for(
+        const piece of pieces
+    ){
+
+        if(piece.used)
+            continue;
+
+        for(
+            let y=0;
+            y<SIZE;
+            y++
+        ){
+
+            for(
+                let x=0;
+                x<SIZE;
+                x++
+            ){
+
+                if(
+                    canPlace(
+                        piece.shape,
+                        x,
+                        y
+                    )
+                ){
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+    }
+
+    return false;
+
+}
+
+
+/* =====================================================
+   GAME OVER
+===================================================== */
+
+function showGameOver(){
+
+    gameOver = true;
+
+    finalScoreElement.textContent =
+        score.toLocaleString();
+
+    gameOverElement.classList.add(
+        "show"
+    );
+
+    playSound(
+        180,
+        .3,
+        "sawtooth",
+        .025
+    );
+
+}
+
+
+/* =====================================================
+   RESTART
+===================================================== */
+
+function restartGame(){
+
+    if(drag){
+
+        if(
+            drag.ghost &&
+            drag.ghost.parentNode
+        ){
+
+            drag.ghost.remove();
+
+        }
+
+        drag = null;
+
+    }
+
+    clearTarget();
+
+    gameOver = false;
+
+    score = 0;
+
+    hints = 3;
+
+    combo = 0;
+
+    currentTheme = 0;
+
+    hintCountElement.textContent =
+        hints;
+
+    gameOverElement.classList.remove(
+        "show"
+    );
+
+    levelMessage.classList.remove(
+        "show"
+    );
+
+    createEmptyBoard();
+
+    createPieces();
+
+    updateScore();
+
+    renderBoard();
+
+    renderPieces();
+
+}
+
+
+restartButton.addEventListener(
+    "click",
+    restartGame
+);
+
+restartGameButton.addEventListener(
+    "click",
+    restartGame
+);
+
+
+/* =====================================================
+   HINT
+===================================================== */
+
+function getFirstMove(){
+
+    for(
+        let index=0;
+        index<pieces.length;
+        index++
+    ){
+
+        const piece =
+            pieces[index];
+
+        if(piece.used)
+            continue;
+
+        for(
+            let y=0;
+            y<SIZE;
+            y++
+        ){
+
+            for(
+                let x=0;
+                x<SIZE;
+                x++
+            ){
+
+                if(
+                    canPlace(
+                        piece.shape,
+                        x,
+                        y
+                    )
+                ){
+
+                    return {
+
+                        index,
+                        x,
+                        y
+
+                    };
+
+                }
+
+            }
+
+        }
+
+    }
+
+    return null;
+
+}
+
+
+hintButton.addEventListener(
+    "click",
+    ()=>{
+
+        if(gameOver)
+            return;
+
+        if(hints <= 0)
+            return;
+
+        const move =
+            getFirstMove();
+
+        if(!move){
+
+            showGameOver();
+
+            return;
+
+        }
+
+        hints--;
+
+        hintCountElement.textContent =
+            hints;
+
+        const piece =
+            pieces[move.index];
+
+        highlightTarget(
+            piece,
+            move.x,
+            move.y
+        );
+
+        playSound(
+            800,
+            .1,
+            "sine",
+            .025
+        );
+
+        setTimeout(
+            clearTarget,
+            2500
+        );
+
+    }
+);
+
+
+/* =====================================================
+   LEVEL POPUP
+===================================================== */
+
+function showLevelMessage(
+    title,
+    text
+){
+
+    levelMessageTitle.textContent =
+        title;
+
+    levelMessageText.textContent =
+        text;
+
+    levelMessage.classList.add(
+        "show"
+    );
+
+    setTimeout(
+        ()=>{
+            levelMessage.classList.remove(
+                "show"
+            );
+        },
+        1700
+    );
+
+}
+
+
+/* =====================================================
+   PARTICLES
+===================================================== */
+
+function spawnParticles(
+    startX,
+    startY,
+    amount
+){
+
+    const boardRect =
+        boardElement.getBoundingClientRect();
+
+    const cellSize =
+        boardRect.width / SIZE;
+
+    const centerX =
+        boardRect.left +
+        (startX + .5) *
+        cellSize;
+
+    const centerY =
+        boardRect.top +
+        (startY + .5) *
+        cellSize;
+
+    for(
+        let i=0;
+        i<Math.min(
+            amount * 2,
+            24
+        );
+        i++
+    ){
+
+        const particle =
+            document.createElement(
+                "div"
+            );
+
+        particle.className =
+            "particle";
+
+        particle.style.left =
+            centerX + "px";
+
+        particle.style.top =
+            centerY + "px";
+
+        particle.style.background =
+            COLORS[
+                Math.floor(
+                    Math.random() *
+                    COLORS.length
+                )
+            ];
+
+        particle.style.setProperty(
+            "--dx",
+            (
+                (Math.random()-.5) *
+                110
+            ) + "px"
+        );
+
+        particle.style.setProperty(
+            "--dy",
+            (
+                (Math.random()-.5) *
+                110
+            ) + "px"
+        );
+
+        document.body.appendChild(
+            particle
+        );
+
+        setTimeout(
+            ()=>particle.remove(),
+            750
+        );
+
+    }
+
+}
+
+
+function spawnClearParticles(){
+
+    const rect =
+        boardElement.getBoundingClientRect();
+
+    for(
+        let i=0;
+        i<36;
+        i++
+    ){
+
+        const particle =
+            document.createElement(
+                "div"
+            );
+
+        particle.className =
+            "particle";
+
+        particle.style.left =
+            (
+                rect.left +
+                Math.random() *
+                rect.width
+            ) + "px";
+
+        particle.style.top =
+            (
+                rect.top +
+                Math.random() *
+                rect.height
+            ) + "px";
+
+        particle.style.background =
+            COLORS[
+                Math.floor(
+                    Math.random() *
+                    COLORS.length
+                )
+            ];
+
+        particle.style.setProperty(
+            "--dx",
+            (
+                (Math.random()-.5) *
+                200
+            ) + "px"
+        );
+
+        particle.style.setProperty(
+            "--dy",
+            (
+                (Math.random()-.5) *
+                200
+            ) + "px"
+        );
+
+        document.body.appendChild(
+            particle
+        );
+
+        setTimeout(
+            ()=>particle.remove(),
+            750
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   RESIZE
+===================================================== */
+
+window.addEventListener(
+    "resize",
+    ()=>{
+
+        if(!drag){
+
+            renderPieces();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   START
+===================================================== */
+
+createEmptyBoard();
+
+createPieces();
+
+updateScore();
+
+renderBoard();
+
+renderPieces();
+
+</script>
+
+</body>
+</html>
